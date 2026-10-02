@@ -119,7 +119,9 @@ async function main() {
   }
 
   const [{ count }] = await sql`select count(*)::int as count from matches where platform = ${platform}`;
-  console.log(`Bitti: ${saved} yeni maç, ${skipped} atlandı, toplam ${count} maç (${platform}).`);
+  const summary = `${saved} yeni maç, ${skipped} atlandı, toplam ${count} maç (${platform}).`;
+  // On GitHub Actions, also show it as an annotation on the run page.
+  console.log(process.env.GITHUB_ACTIONS ? `::notice title=Toplama bitti::${summary}` : `Bitti: ${summary}`);
   await sql.end();
 }
 
