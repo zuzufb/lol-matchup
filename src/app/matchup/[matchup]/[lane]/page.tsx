@@ -18,11 +18,13 @@ import {
   getChampionBySlug,
   getLatestVersion,
   getRecentPatches,
-  getRuneIcons,
+  getRuneData,
   patchLabel,
 } from "@/lib/ddragon";
 import { pct } from "@/lib/format";
-import { getMatchup, matchupPath, parseMatchupSlug } from "@/lib/matchup";
+import { MIN_REAL_GAMES } from "@/lib/db-matchup";
+import { getMatchup } from "@/lib/matchup";
+import { matchupPath, parseMatchupSlug } from "@/lib/paths";
 import type { Filters } from "@/lib/types";
 
 type Props = PageProps<"/matchup/[matchup]/[lane]">;
@@ -57,10 +59,10 @@ export default async function MatchupPage({ params, searchParams }: Props) {
   if (!m) notFound();
   const { champion, opponent, lane } = m;
 
-  const [version, patches, runeIcons, query] = await Promise.all([
+  const [version, patches, runes, query] = await Promise.all([
     getLatestVersion(),
     getRecentPatches(),
-    getRuneIcons(),
+    getRuneData(),
     searchParams,
   ]);
 
@@ -145,13 +147,15 @@ export default async function MatchupPage({ params, searchParams }: Props) {
 
       {data.isSample && (
         <div className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-3 text-sm">
-          <span className="font-semibold text-gold">Örnek veri:</span> Bu sayfadaki sayılar tasarımı göstermek için
-          üretildi. Riot API’den gerçek maç verisi toplanmaya başlayınca gerçek değerlerle değişecek.
+          <span className="font-semibold text-gold">Örnek veri:</span>{" "}
+          {data.realGames
+            ? `Bu filtrelerle şimdilik sadece ${data.realGames} gerçek maç var, anlamlı istatistik için en az ${MIN_REAL_GAMES} gerekiyor. O yüzden aşağıdaki sayılar örnek. Daha fazla maç toplandıkça gerçek değerler görünecek.`
+            : "Bu filtrelerle henüz toplanmış maç yok. Aşağıdaki sayılar tasarımı göstermek için üretildi, gerçek maçlar toplandıkça değişecek."}
         </div>
       )}
 
       <StatsSection data={data} />
-      <RunesSection data={data} runeIcons={runeIcons} />
+      <RunesSection data={data} runeIcons={runes.icons} />
       <SpellsSkillsSection data={data} version={version} />
       <ItemsSection data={data} version={version} />
       <BuildSection data={data} version={version} />

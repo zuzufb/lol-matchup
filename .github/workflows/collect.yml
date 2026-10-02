@@ -1,0 +1,34 @@
+# Collects EUW ranked games from the Riot API into the database every hour.
+# Needs two repository secrets (Settings > Secrets and variables > Actions):
+#   RIOT_API_KEY  - from developer.riotgames.com (a development key expires every 24 hours)
+#   DATABASE_URL  - the Postgres connection string (Neon)
+name: Collect matches
+
+on:
+  schedule:
+    - cron: "5 * * * *"
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "How long to collect, in minutes"
+        default: "50"
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run collect -- --minutes ${{ inputs.minutes || '50' }} --platform euw1
+        env:
+          RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LANES, type LaneSlug } from "@/lib/constants";
-import { matchupPath } from "@/lib/matchup";
+import { matchupPath } from "@/lib/paths";
 import type { Champion } from "@/lib/types";
 import { ChampionIcon } from "./ChampionIcon";
 

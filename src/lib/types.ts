@@ -101,6 +101,8 @@ export interface MatchupData {
   filters: Filters;
   /** True while the page is showing generated sample numbers. */
   isSample: boolean;
+  /** Real games found for these filters when that was too few and sample data is shown instead. */
+  realGames?: number;
   games: number;
   avgDurationSeconds: number;
   self: SideStats;

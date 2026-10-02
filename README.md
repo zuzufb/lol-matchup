@@ -6,28 +6,31 @@ veriye dayalı item önerileri gösterir.
 
 Örnek sayfa: `/matchup/ahri-vs-zed/mid?rank=emerald_plus&region=euw`
 
-## Durum
+## Nasıl çalışıyor
 
-**1. aşama (şu an):** Arayüz hazır. Champion listesi ve ikonlar Riot'un ücretsiz
-[Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon) verisinden geliyor. Matchup sayıları
-şimdilik **örnek veri** (`src/lib/sample-data.ts`).
+1. **Collector** (`collector/`): GitHub Actions her saat başı çalıştırır (`.github/workflows/collect.yml`).
+   EUW ladder'ından (Gold'dan Challenger'a) oyuncuları bulur, ranked solo maçlarını ve timeline'larını
+   Riot API'den (Match-V5) çeker ve PostgreSQL'e yazar. Rate limit'e kendisi uyar.
+2. **Site** (`src/`): matchup sayfası veritabanındaki maçlardan istatistikleri hesaplar. Seçilen filtrelerle
+   20'den az maç varsa örnek veri gösterir ve bunu sayfada belirtir.
 
-**2. aşama:** Riot API'den (Match-V5 + timeline) gerçek maç verisi toplayan bir collector ve PostgreSQL.
-`src/lib/matchup.ts` içindeki `getMatchup` o zaman veritabanını okuyacak; sayfalar değişmeden kalacak.
+## Kurulum
 
-## Çalıştırma
+GitHub reposunda **Settings → Secrets and variables → Actions** altına iki secret eklenir:
+
+- `RIOT_API_KEY`: developer.riotgames.com'dan alınan anahtar. Development key 24 saatte bir yenilenmeli.
+- `DATABASE_URL`: PostgreSQL bağlantı adresi (ör. Neon). Aynı değer Vercel'de de ortam değişkeni olmalı.
+
+Collector'ı elle başlatmak için: **Actions → Collect matches → Run workflow**.
+
+## Bilgisayarda çalıştırma
 
 ```bash
 npm install
-npm run dev
-```
-
-Sonra http://localhost:3000 adresini aç.
-
-Riot API anahtarı (2. aşamada gerekecek) `.env.local` dosyasına yazılır, GitHub'a gönderilmez:
-
-```bash
-cp .env.example .env.local   # sonra RIOT_API_KEY=... satırını doldur
+cp .env.example .env.local   # RIOT_API_KEY ve DATABASE_URL değerlerini doldur
+npm run dev                  # site: http://localhost:3000
+npm run collect -- --minutes 5
+npm test                     # TEST_DATABASE_URL verilirse veritabanı testi de çalışır
 ```
 
 ## Yapı
@@ -36,7 +39,9 @@ cp .env.example .env.local   # sonra RIOT_API_KEY=... satırını doldur
 - `src/app/matchup/[matchup]/[lane]/page.tsx`: matchup sayfası
 - `src/lib/ddragon.ts`: Data Dragon (champion, rune, item ikonları, patch listesi)
 - `src/lib/types.ts`: matchup verisinin şekli (veritabanı da bu şekle göre doldurulacak)
-- `src/lib/sample-data.ts`: geçici örnek veri
+- `src/lib/db-matchup.ts`, `src/lib/aggregate.ts`: veritabanından matchup istatistikleri
+- `src/lib/sample-data.ts`: yeterli maç olmadığında gösterilen örnek veri
+- `collector/`: Riot API'den maç toplayan program ve veritabanı şeması (`schema.sql`)
 
 LoL Matchup is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or
 anyone officially involved in producing or managing Riot Games properties.

@@ -276,6 +276,11 @@ export function InsightsSection({ data, version }: { data: MatchupData; version:
       title={`${data.opponent.name} karşısında item önerileri`}
       subtitle="Teorik değil: item'ı alan ve almayan oyuncuların bu matchup'taki sonuçları karşılaştırılır"
     >
+      {data.insights.length === 0 && (
+        <p className="text-sm text-muted">
+          Bu matchup&apos;ta erken alınan item&apos;lar champion&apos;ın genel tercihlerinden belirgin şekilde farklı değil.
+        </p>
+      )}
       <div className="grid gap-3 lg:grid-cols-2">
         {data.insights.map((ins) => {
           const diff = ins.withItem.winRate - ins.withoutItem.winRate;

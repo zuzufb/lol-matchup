@@ -77,24 +77,88 @@ export async function getChampionBySlug(slug: string): Promise<Champion | undefi
 
 interface DDragonRuneTree {
   id: number;
+  name: string;
   icon: string;
-  slots: { runes: { id: number; icon: string }[] }[];
+  slots: { runes: { id: number; name: string; icon: string }[] }[];
 }
 
-/** Map of rune / rune tree id to its icon URL. Empty if Data Dragon is unreachable. */
-export async function getRuneIcons(): Promise<Record<number, string>> {
+export interface RuneData {
+  icons: Record<number, string>;
+  names: Record<number, string>;
+}
+
+/** Rune and rune tree names and icon URLs by id. Empty if Data Dragon is unreachable. */
+export async function getRuneData(): Promise<RuneData> {
   const version = await getLatestVersion();
   const trees = await getJson<DDragonRuneTree[]>(
     `${BASE}/cdn/${version}/data/en_US/runesReforged.json`,
   );
-  const icons: Record<number, string> = {};
+  const data: RuneData = { icons: {}, names: {} };
   for (const tree of trees ?? []) {
-    icons[tree.id] = `${BASE}/cdn/img/${tree.icon}`;
+    data.icons[tree.id] = `${BASE}/cdn/img/${tree.icon}`;
+    data.names[tree.id] = tree.name;
     for (const slot of tree.slots) {
-      for (const rune of slot.runes) icons[rune.id] = `${BASE}/cdn/img/${rune.icon}`;
+      for (const rune of slot.runes) {
+        data.icons[rune.id] = `${BASE}/cdn/img/${rune.icon}`;
+        data.names[rune.id] = rune.name;
+      }
     }
   }
-  return icons;
+  return data;
+}
+
+interface DDragonItem {
+  name: string;
+  into?: string[];
+  from?: string[];
+  tags?: string[];
+  depth?: number;
+  gold: { total: number; purchasable: boolean };
+  maps: Record<string, boolean>;
+  consumed?: boolean;
+}
+
+export interface ItemInfo {
+  name: string;
+  /** A finished legendary item (counts toward "1st item, 2nd item, ..."). */
+  completed: boolean;
+  /** Tier 2 boots, e.g. Sorcerer's Shoes. */
+  boots: boolean;
+  /** Potions, wards, trinkets: left out of build analysis. */
+  consumable: boolean;
+}
+
+export async function getItems(): Promise<Record<number, ItemInfo>> {
+  const version = await getLatestVersion();
+  const file = await getJson<{ data: Record<string, DDragonItem> }>(
+    `${BASE}/cdn/${version}/data/en_US/item.json`,
+  );
+  const all = file?.data ?? {};
+  const purchasable = (id: string) => Boolean(all[id]?.gold.purchasable);
+  const items: Record<number, ItemInfo> = {};
+  for (const [id, item] of Object.entries(all)) {
+    if (!item.maps?.["11"]) continue; // Summoner's Rift only
+    const tags = item.tags ?? [];
+    const boots = tags.includes("Boots") && id !== "1001" && (item.depth ?? 1) === 2;
+    const consumable =
+      Boolean(item.consumed) ||
+      tags.includes("Consumable") ||
+      tags.includes("Trinket") ||
+      (tags.includes("Vision") && item.gold.total <= 100);
+    items[Number(id)] = {
+      name: item.name,
+      boots,
+      consumable,
+      // Items like Manamune only "build into" a transformed, unbuyable form.
+      completed:
+        !boots &&
+        !consumable &&
+        item.gold.purchasable &&
+        item.gold.total >= 2200 &&
+        !(item.into ?? []).some(purchasable),
+    };
+  }
+  return items;
 }
 
 export const championIcon = (version: string, championId: string) =>

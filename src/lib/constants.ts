@@ -44,3 +44,69 @@ export function isLane(value: string): value is LaneSlug {
 export function laneLabel(slug: LaneSlug): string {
   return LANES.find((l) => l.slug === slug)!.label;
 }
+
+export const TIERS = [
+  "IRON",
+  "BRONZE",
+  "SILVER",
+  "GOLD",
+  "PLATINUM",
+  "EMERALD",
+  "DIAMOND",
+  "MASTER",
+  "GRANDMASTER",
+  "CHALLENGER",
+] as const;
+
+/** Lowest and highest tier index (see TIERS) included by a rank filter. */
+export function tierRange(rank: string): [number, number] {
+  const min: Record<string, string> = {
+    gold_plus: "GOLD",
+    platinum_plus: "PLATINUM",
+    emerald_plus: "EMERALD",
+    diamond_plus: "DIAMOND",
+    master_plus: "MASTER",
+    grandmaster_plus: "GRANDMASTER",
+    challenger: "CHALLENGER",
+  };
+  const index = TIERS.indexOf((min[rank] ?? "IRON") as (typeof TIERS)[number]);
+  return [index, TIERS.length - 1];
+}
+
+export function regionPlatform(region: string): string {
+  return REGIONS.find((r) => r.value === region)?.platform ?? "euw1";
+}
+
+export function laneFromPosition(position: string): LaneSlug | undefined {
+  return LANES.find((l) => l.riotPosition === position)?.slug;
+}
+
+export function positionOf(lane: LaneSlug): string {
+  return LANES.find((l) => l.slug === lane)!.riotPosition;
+}
+
+/** Summoner spell numeric id (Match-V5 summoner1Id) to Data Dragon id and name. */
+export const SUMMONER_SPELLS: Record<number, { id: string; name: string }> = {
+  1: { id: "SummonerBoost", name: "Cleanse" },
+  3: { id: "SummonerExhaust", name: "Exhaust" },
+  4: { id: "SummonerFlash", name: "Flash" },
+  6: { id: "SummonerHaste", name: "Ghost" },
+  7: { id: "SummonerHeal", name: "Heal" },
+  11: { id: "SummonerSmite", name: "Smite" },
+  12: { id: "SummonerTeleport", name: "Teleport" },
+  14: { id: "SummonerDot", name: "Ignite" },
+  21: { id: "SummonerBarrier", name: "Barrier" },
+};
+
+/** Stat shards are not in Data Dragon's runesReforged.json. */
+export const STAT_SHARDS: Record<number, string> = {
+  5001: "Health Scaling",
+  5002: "Armor",
+  5003: "Magic Resist",
+  5005: "Attack Speed",
+  5007: "Ability Haste",
+  5008: "Adaptive Force",
+  5010: "Move Speed",
+  5011: "Health",
+  5013: "Tenacity and Slow Resist",
+};
